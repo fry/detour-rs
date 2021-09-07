@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(named_asm_labels))]
 pub use self::patcher::Patcher;
 pub use self::trampoline::Trampoline;
 
