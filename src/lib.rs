@@ -7,6 +7,7 @@
   all(feature = "nightly", test),
   feature(naked_functions, core_intrinsics, asm)
 )]
+#![cfg_attr(test, allow(named_asm_labels))]
 
 //! A cross-platform detour library written in Rust.
 //!
