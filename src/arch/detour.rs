@@ -41,11 +41,15 @@ impl Detour {
       None
     };
 
+    dbg!(&relay.as_ref().map(|code| code.as_ptr() as *const ()));
+
     // If a relay is supplied, use it instead of the detour address
     let detour = relay
       .as_ref()
       .map(|code| code.as_ptr() as *const ())
       .unwrap_or(detour);
+
+    dbg!(&detour);
 
     Ok(Detour {
       patcher: UnsafeCell::new(arch::Patcher::new(

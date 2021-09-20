@@ -1,4 +1,4 @@
-use super::meta;
+use super::{meta, thunk};
 use crate::error::{Error, Result};
 use crate::pic;
 use bad64::{Imm, Instruction, Op, Operand, Reg};
@@ -46,18 +46,6 @@ struct Builder {
   target: *const (),
 }
 
-macro_rules! thunk_dynasm {
-  ($($t:tt)*) => {{
-    let mut ops = dynasmrt::aarch64::Assembler::new().unwrap();
-    dynasm!(ops
-      ; .arch aarch64
-      $($t)*
-    );
-    let buf = ops.finalize().unwrap();
-    buf.deref().to_vec()
-  }}
-}
-
 impl Builder {
   /// Returns a trampoline builder.
   pub fn new(target: *const (), margin: usize) -> Self {
@@ -75,7 +63,7 @@ impl Builder {
   ///
   /// Margins larger than five bytes may lead to undefined behavior.
   pub fn build(mut self) -> Result<Trampoline> {
-    let mem = unsafe { std::slice::from_raw_parts(self.target as *const u8, self.margin) };
+    let mem = unsafe { std::slice::from_raw_parts(self.target as *const u8, self.margin + 4) };
     let mut instructions = bad64::disasm(mem, self.target as u64);
 
     let mut emitter = pic::CodeEmitter::new();
@@ -90,14 +78,23 @@ impl Builder {
 
       dbg!(&instruction);
 
-      let thunk = self.process_instruction(&instruction)?;
+      let thunk = self.copy_instruction(&instruction)?;
       emitter.add_thunk(thunk);
+
+      // Function ends here
+      if self.instruction_ends_code(&instruction) {
+        self.finished = true;
+      }
 
       // Copied enough bytes for the prolog, append a branch to the rest of the
       // function
       if bytes_disassembled >= self.margin && !self.finished {
         self.finished = true;
-        emitter.add_thunk(self.gen_jmp_immediate(self.target as usize))
+        let next_instruction = instructions
+          .next()
+          .and_then(|r| r.ok())
+          .ok_or(Error::InvalidCode)?;
+        emitter.add_thunk(thunk::gen_jmp_immediate(next_instruction.address() as usize));
       }
     }
 
@@ -107,7 +104,9 @@ impl Builder {
     })
   }
 
-  fn process_instruction(&mut self, instruction: &Instruction) -> Result<Box<dyn pic::Thunkable>> {
+  // Copy the instruction into a position-independant thunk, or one that will
+  // generate the correct code for the offset
+  fn copy_instruction(&mut self, instruction: &Instruction) -> Result<Box<dyn pic::Thunkable>> {
     Ok(match instruction.op() {
       // Instruction relative load instructions
       Op::LDR if matches!(instruction.operands().get(1), Some(Operand::Label(imm))) => {
@@ -138,14 +137,14 @@ impl Builder {
 
           let max_range = 1isize << 20;
           if delta >= -max_range && delta < max_range {
-            GenericArray::clone_from_slice(&thunk_dynasm!(
+            GenericArray::clone_from_slice(&thunk::thunk_dynasm!(
                 ; adr X(reg_no(reg).unwrap()), delta
                 ; nop
             ))
           } else if delta_page >= -max_range && delta_page < max_range {
-            GenericArray::clone_from_slice(&thunk_dynasm!(
+            GenericArray::clone_from_slice(&thunk::thunk_dynasm!(
                 ; adrp X(reg_no(reg).unwrap()), delta_page
-                ; add X(reg_no(reg).unwrap()), X(reg_no(reg).unwrap()), (target & 0xFFFF) as u32
+                ; add X(reg_no(reg).unwrap()), X(reg_no(reg).unwrap()), (target & 0xFFF) as u32
             ))
           } else {
             unimplemented!()
@@ -156,14 +155,8 @@ impl Builder {
     })
   }
 
-  fn gen_jmp_immediate(&mut self, target: usize) -> Box<dyn pic::Thunkable> {
-    // generate a branch to an absolute address
-    Box::new(thunk_dynasm!(
-        ; ldr x17, >target
-        ; br x17
-        ; target:
-        ; .dword target as _
-    ))
+  fn instruction_ends_code(&mut self, instruction: &Instruction) -> bool {
+    matches!(instruction.op(), Op::RET | Op::B | Op::BR)
   }
 }
 

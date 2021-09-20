@@ -1,3 +1,4 @@
+use super::thunk;
 use crate::{error::Result, pic};
 use bad64::{Imm, Instruction, Op, Operand, Reg};
 use std::mem;
@@ -29,9 +30,14 @@ pub fn prolog_margin(_target: *const ()) -> usize {
   12
 }
 
-/// Creates a relay; required for destinations further away than 2GB (on x64).
+/// Creates a relay containing the detour address to be loaded by the three
+/// instruction indirect jump
 pub fn relay_builder(target: *const (), detour: *const ()) -> Result<Option<pic::CodeEmitter>> {
-  Ok(None)
+  let mut emitter = pic::CodeEmitter::new();
+  emitter.add_thunk(Box::new(thunk::thunk_dynasm!(
+    ; .qword detour as _
+  )));
+  Ok(Some(emitter))
 }
 
 fn imm_to_signed(imm: &Imm) -> i64 {
