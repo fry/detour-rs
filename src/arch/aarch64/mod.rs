@@ -13,13 +13,11 @@ mod tests {
   use std::mem;
 
   /// Default test case function definition.
-  type CRet = unsafe extern "C" fn() -> i32;
+  type CRet = unsafe extern "C" fn() -> usize;
 
   /// Detours a C function returning an integer, and asserts its return value.
   #[inline(never)]
-  unsafe fn detour_test(target: CRet, result: i32) {
-    dbg!(ret10 as *const ());
-    dbg!(target as *const ());
+  unsafe fn detour_test(target: CRet, result: usize) {
     let hook = RawDetour::new(target as *const (), ret10 as *const ()).unwrap();
     assert_eq!(target(), result);
     hook.enable().unwrap();
@@ -35,23 +33,23 @@ mod tests {
   #[test]
   fn detour_adr() {
     #[naked]
-    unsafe extern "C" fn branch_ret5() -> i32 {
+    unsafe extern "C" fn branch_ret5() -> usize {
       asm!(
-        "adr x16, label",
+        "adr x0, label",
         "nop",
         "nop",
-        "mov x0, #5",
         "ret",
         "label:",
         options(noreturn)
       )
     }
 
-    unsafe { detour_test(mem::transmute(branch_ret5 as usize), 5) }
+    let label_addr = branch_ret5 as usize + 16;
+    unsafe { detour_test(mem::transmute(branch_ret5 as usize), label_addr) }
   }
 
   /// Default detour target.
-  unsafe extern "C" fn ret10() -> i32 {
+  unsafe extern "C" fn ret10() -> usize {
     10
   }
 }

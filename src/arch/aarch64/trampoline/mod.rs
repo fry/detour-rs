@@ -134,6 +134,7 @@ impl Builder {
         Box::new(pic::FixedThunk::<typenum::U8>::new(move |dest| {
           let delta = target as isize - dest as isize;
           let delta_page = (target / meta::PAGE_SIZE) as isize - (dest / meta::PAGE_SIZE) as isize;
+          let page = (target & !0xfff) as isize - (dest & !0xfff) as isize;
 
           let max_range = 1isize << 20;
           if delta >= -max_range && delta < max_range {
@@ -143,7 +144,7 @@ impl Builder {
             ))
           } else if delta_page >= -max_range && delta_page < max_range {
             GenericArray::clone_from_slice(&thunk::thunk_dynasm!(
-                ; adrp X(reg_no(reg).unwrap()), delta_page
+                ; adrp X(reg_no(reg).unwrap()), page
                 ; add X(reg_no(reg).unwrap()), X(reg_no(reg).unwrap()), (target & 0xFFF) as u32
             ))
           } else {

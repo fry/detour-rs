@@ -1,3 +1,4 @@
+use super::meta;
 use super::thunk;
 use crate::error::{Error, Result};
 use crate::{pic, util};
@@ -48,6 +49,8 @@ impl Patcher {
     } else {
       &self.original_prolog
     });
+
+    meta::clear_instruction_cache(self.patch_area);
 
     let mut instructions: Vec<_> =
       bad64::disasm(self.patch_area, self.patch_area.as_ptr() as u64).collect();

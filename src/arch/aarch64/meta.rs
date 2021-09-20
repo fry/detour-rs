@@ -84,7 +84,15 @@ pub fn skip_import_jmp(code: &[u8], address: u64) -> Option<u64> {
 
   let br_addr = imm_to_signed(page) + imm_to_signed(page_offset);
 
-  return Some(br_addr as u64);
+  Some(br_addr as u64)
+}
+
+pub unsafe fn clear_instruction_cache(code: &[u8]) {
+  // invalidate instruction cache
+  extern "C" {
+    fn __clear_cache(start: *const u8, end: *const u8);
+  }
+  __clear_cache(code.as_ptr(), code.as_ptr().add(code.len()));
 }
 
 #[cfg(test)]
