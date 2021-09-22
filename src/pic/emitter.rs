@@ -20,10 +20,12 @@ impl CodeEmitter {
     for thunk in &self.thunks {
       // Retrieve the code for the segment
       let code = thunk.generate(base);
-      assert_eq!(code.len(), thunk.len());
+      dbg!(code.len());
+      dbg!(thunk.len());
+      assert!(code.len() <= thunk.len());
 
       // Advance the current EIP address
-      base += thunk.len();
+      base += code.len();
       result.extend(code);
     }
 

@@ -33,7 +33,7 @@ mod tests {
   #[test]
   fn detour_adr() {
     #[naked]
-    unsafe extern "C" fn branch_ret5() -> usize {
+    unsafe extern "C" fn branch_ret() -> usize {
       asm!(
         "adr x0, label",
         "nop",
@@ -44,8 +44,47 @@ mod tests {
       )
     }
 
-    let label_addr = branch_ret5 as usize + 16;
-    unsafe { detour_test(mem::transmute(branch_ret5 as usize), label_addr) }
+    let label_addr = branch_ret as usize + 16;
+    unsafe { detour_test(mem::transmute(branch_ret as usize), label_addr) }
+  }
+
+  #[test]
+  fn detour_adrp() {
+    #[naked]
+    unsafe extern "C" fn branch_ret() -> usize {
+      asm!(
+        "adrp x0, .Llabel",
+        "nop",
+        "nop",
+        "ret",
+        ".Llabel:",
+        options(noreturn)
+      )
+    }
+
+    let label_addr = (branch_ret as usize + 16) & !0xFFF;
+    unsafe { detour_test(mem::transmute(branch_ret as usize), label_addr) }
+  }
+
+  #[test]
+  fn detour_ldr() {
+    #[naked]
+    unsafe extern "C" fn branch_ret() -> usize {
+      asm!(
+        "ldr x0, 2f",
+        "nop",
+        "nop",
+        "ret",
+        "2:",
+        "nop",
+        "nop",
+        options(noreturn)
+      )
+    }
+
+    // two NOPs
+    let value = 0xD503201FD503201F;
+    unsafe { detour_test(mem::transmute(branch_ret as usize), value) }
   }
 
   /// Default detour target.

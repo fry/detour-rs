@@ -109,11 +109,11 @@ impl Builder {
   fn copy_instruction(&mut self, instruction: &Instruction) -> Result<Box<dyn pic::Thunkable>> {
     Ok(match instruction.op() {
       // Instruction relative load instructions
-      Op::LDR if matches!(instruction.operands().get(1), Some(Operand::Label(imm))) => {
-        unimplemented!()
+      Op::LDR if matches!(instruction.operands().get(1), Some(Operand::Label(_))) => {
+        thunk::gen_ldr_literal(instruction)?
       },
-      Op::ADR => self.copy_adr(instruction)?,
-      Op::ADRP => unimplemented!(),
+      Op::ADR => thunk::gen_adr(instruction)?,
+      Op::ADRP => thunk::gen_adrp(instruction)?,
       // Branching instructions
       op if meta::CONDITIONAL_OPS.contains(&op) => unimplemented!(),
       Op::B | Op::BL => unimplemented!(),
@@ -124,76 +124,18 @@ impl Builder {
     })
   }
 
-  fn copy_adr(&mut self, instruction: &Instruction) -> Result<Box<dyn pic::Thunkable>> {
-    Ok(match instruction.operands() {
-      [Operand::Reg { reg, arrspec: None }, Operand::Label(Imm::Unsigned(target))]
-        if instruction.op() == Op::ADR =>
-      {
-        let target = *target as usize;
-        let reg = *reg;
-        Box::new(pic::FixedThunk::<typenum::U8>::new(move |dest| {
-          let delta = target as isize - dest as isize;
-          let delta_page = (target / meta::PAGE_SIZE) as isize - (dest / meta::PAGE_SIZE) as isize;
-          let page = (target & !0xfff) as isize - (dest & !0xfff) as isize;
-
-          let max_range = 1isize << 20;
-          if delta >= -max_range && delta < max_range {
-            GenericArray::clone_from_slice(&thunk::thunk_dynasm!(
-                ; adr X(reg_no(reg).unwrap()), delta
-                ; nop
-            ))
-          } else if delta_page >= -max_range && delta_page < max_range {
-            GenericArray::clone_from_slice(&thunk::thunk_dynasm!(
-                ; adrp X(reg_no(reg).unwrap()), page
-                ; add X(reg_no(reg).unwrap()), X(reg_no(reg).unwrap()), (target & 0xFFF) as u32
-            ))
-          } else {
-            unimplemented!()
-          }
-        }))
-      }
-      _ => unimplemented!(),
-    })
-  }
-
   fn instruction_ends_code(&mut self, instruction: &Instruction) -> bool {
     matches!(instruction.op(), Op::RET | Op::B | Op::BR)
   }
 }
 
-fn reg_no(reg: Reg) -> Option<u32> {
-  Some(match reg {
-    Reg::X0 => 0,
-    Reg::X1 => 1,
-    Reg::X2 => 2,
-    Reg::X3 => 3,
-    Reg::X4 => 4,
-    Reg::X5 => 5,
-    Reg::X6 => 6,
-    Reg::X7 => 7,
-    Reg::X8 => 8,
-    Reg::X9 => 9,
-    Reg::X10 => 10,
-    Reg::X11 => 11,
-    Reg::X12 => 12,
-    Reg::X13 => 13,
-    Reg::X14 => 14,
-    Reg::X15 => 15,
-    Reg::X16 => 16,
-    Reg::X17 => 17,
-    Reg::X18 => 18,
-    Reg::X19 => 19,
-    Reg::X20 => 20,
-    Reg::X21 => 21,
-    Reg::X22 => 22,
-    Reg::X23 => 23,
-    Reg::X24 => 24,
-    Reg::X25 => 25,
-    Reg::X26 => 26,
-    Reg::X27 => 27,
-    Reg::X28 => 28,
-    Reg::X29 => 29,
-    Reg::X30 => 30,
-    _ => return None,
-  })
-}
+// struct Displacement {
+//   page_delta: isize,
+//   addr_delta: isize
+// }
+// fn get_displacement(dest: usize, target: usize) -> Displacement {
+//   Displacement {
+//     page_delta:
+//     addr_delta: target as isize - dest as isize
+//   }
+// }

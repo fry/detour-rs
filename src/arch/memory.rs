@@ -22,7 +22,7 @@ pub fn allocate_pic(
     let code = emitter.emit(memory.as_ptr() as *const _);
     let mut tramp_insts: Vec<_> = bad64::disasm(&code, memory.as_ptr() as u64).collect();
     dbg!(&tramp_insts);
-    memory.copy_from_slice(code.as_slice());
+    memory[..code.len()].copy_from_slice(code.as_slice());
     memory
   })
 }
