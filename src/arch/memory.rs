@@ -20,8 +20,6 @@ pub fn allocate_pic(
   pool.allocate(origin, emitter.len()).map(|mut memory| {
     // Generate code for the obtained address
     let code = emitter.emit(memory.as_ptr() as *const _);
-    let mut tramp_insts: Vec<_> = bad64::disasm(&code, memory.as_ptr() as u64).collect();
-    dbg!(&tramp_insts);
     memory[..code.len()].copy_from_slice(code.as_slice());
     memory
   })
