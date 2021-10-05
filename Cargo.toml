@@ -45,6 +45,3 @@ dynasm = "1.1.0"
 
 [target."cfg(windows)".dev-dependencies]
 winapi = { version = "0.3.7", features = ["minwindef", "windef", "winnt", "libloaderapi"] }
-
-[patch.crates-io]
-mmap-fixed = { path = "../mmap-fixed" }
