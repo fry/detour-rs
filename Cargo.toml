@@ -19,8 +19,9 @@ cfg-if = "1.0.0"
 generic-array = "0.14.1"
 lazy_static = "1.2"
 libc = "0.2.45"
-mmap = { package = "mmap-fixed", version = "0.1.0" }
-region = "2.0.0"
+log = "0.4.14"
+mmap = { package = "mmap-fixed", version = "0.1.5" }
+region = "3.0.0"
 slice-pool = "0.4.1"
 
 [dev-dependencies]
@@ -44,3 +45,6 @@ dynasm = "1.1.0"
 
 [target."cfg(windows)".dev-dependencies]
 winapi = { version = "0.3.7", features = ["minwindef", "windef", "winnt", "libloaderapi"] }
+
+[patch.crates-io]
+mmap-fixed = { path = "../mmap-fixed" }

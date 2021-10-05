@@ -104,18 +104,25 @@ impl ProximityAllocator {
   /// Tries to allocate fixed memory at the specified address.
   fn allocate_fixed_pool(address: *const (), size: usize) -> Option<SlicePool<u8>> {
     // Try to allocate memory at the specified address
-    mmap::MemoryMap::new(
+    let result = mmap::MemoryMap::new(
       size,
       &[
         mmap::MapOption::MapReadable,
-        mmap::MapOption::MapWritable,
         mmap::MapOption::MapExecutable,
         mmap::MapOption::MapAddr(address as *const _),
       ],
-    )
-    .ok()
-    .map(SliceableMemoryMap)
-    .map(SlicePool::new)
+    );
+
+    if let Err(err) = result {
+      log::debug!(
+        "failed to allocate {} bytes at {:?}: {:?}",
+        size,
+        address,
+        err
+      );
+    }
+
+    result.ok().map(SliceableMemoryMap).map(SlicePool::new)
   }
 }
 

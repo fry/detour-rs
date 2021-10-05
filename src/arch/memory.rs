@@ -17,10 +17,12 @@ pub fn allocate_pic(
   origin: *const (),
 ) -> Result<alloc::ExecutableMemory> {
   // Allocate memory close to the origin
-  pool.allocate(origin, emitter.len()).map(|mut memory| {
+  log::debug!("allocating {} bytes close to {:?}", emitter.len(), origin);
+  let mut memory = pool.allocate(origin, emitter.len())?;
+  memory.modify(|data| {
     // Generate code for the obtained address
-    let code = emitter.emit(memory.as_ptr() as *const _);
-    memory[..code.len()].copy_from_slice(code.as_slice());
-    memory
-  })
+    let code = emitter.emit(data.as_ptr() as *const _);
+    data[..code.len()].copy_from_slice(code.as_slice());
+  })?;
+  Ok(memory)
 }

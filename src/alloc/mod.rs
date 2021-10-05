@@ -36,6 +36,21 @@ pub struct ExecutableMemory {
   data: proximity::Allocation,
 }
 
+impl ExecutableMemory {
+  pub fn modify(&mut self, write: impl FnOnce(&mut [u8])) -> Result<()> {
+    let _handle = unsafe {
+      region::protect_with_handle(
+        self.data.deref().as_ptr(),
+        self.data.deref().len(),
+        region::Protection::READ_WRITE,
+      )
+    }?;
+
+    write(self.data.deref_mut());
+    Ok(())
+  }
+}
+
 impl Drop for ExecutableMemory {
   fn drop(&mut self) {
     // Release the associated memory map (if unique)
@@ -48,11 +63,5 @@ impl Deref for ExecutableMemory {
 
   fn deref(&self) -> &Self::Target {
     self.data.deref()
-  }
-}
-
-impl DerefMut for ExecutableMemory {
-  fn deref_mut(&mut self) -> &mut [u8] {
-    self.data.deref_mut()
   }
 }

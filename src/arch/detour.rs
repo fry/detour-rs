@@ -98,11 +98,7 @@ impl Detour {
     // Runtime code is by default only read-execute
     let _handle = {
       let area = (*self.patcher.get()).area();
-      region::protect_with_handle(
-        area.as_ptr(),
-        area.len(),
-        region::Protection::READ_WRITE_EXECUTE,
-      )
+      region::protect_with_handle(area.as_ptr(), area.len(), region::Protection::READ_WRITE)
     }?;
 
     // Copy either the detour or the original bytes of the function
