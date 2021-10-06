@@ -30,6 +30,9 @@ impl Detour {
       Err(Error::NotExecutable)?;
     }
 
+    // Resolve real target address
+    let target = arch::meta::skip_jmps(target);
+
     // Create a trampoline generator for the target function
     let margin = arch::meta::prolog_margin(target);
     let trampoline = arch::Trampoline::new(target, margin)?;

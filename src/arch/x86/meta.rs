@@ -10,6 +10,10 @@ pub fn prolog_margin(_target: *const ()) -> usize {
   mem::size_of::<thunk::x86::JumpRel>()
 }
 
+pub unsafe fn skip_jmps(target: *const ()) -> *const () {
+  target
+}
+
 /// Creates a relay; required for destinations further away than 2GB (on x64).
 pub fn relay_builder(target: *const (), detour: *const ()) -> Result<Option<pic::CodeEmitter>> {
   let displacement = (target as isize).wrapping_sub(detour as isize);

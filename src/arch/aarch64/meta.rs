@@ -47,15 +47,27 @@ fn imm_to_signed(imm: &Imm) -> i64 {
   }
 }
 
+pub unsafe fn skip_jmps(target: *const ()) -> *const () {
+  let code = std::slice::from_raw_parts_mut(target as *mut u8, 12);
+  skip_import_jmp(code, target as u64)
+    .map(|p| p as *const ())
+    .unwrap_or(target)
+}
+
 /// Skip potential jumps to import functions
-pub fn skip_import_jmp(code: &[u8], address: u64) -> Option<u64> {
+fn skip_import_jmp(code: &[u8], address: u64) -> Option<u64> {
   let instructions: Vec<_> = bad64::disasm(code, address).collect();
 
+  // Two options of indirect jumps:
+  // 1) Import address table
   // adrp  x16, IAT
   // ldr   x16, [x16, IAT]
   // br    x16
+  // 2) Direct branch
+  // b FUNC
   let instruction = instructions.get(0).and_then(|r| r.as_ref().ok())?;
   let page = match instruction.operands() {
+    // ADRP
     [Operand::Reg {
       reg: Reg::X16,
       arrspec: None,
@@ -64,6 +76,8 @@ pub fn skip_import_jmp(code: &[u8], address: u64) -> Option<u64> {
     {
       a
     },
+    // Direct branch
+    [Operand::Label(a)] if instruction.op() == Op::B => return Some(imm_to_signed(a) as u64),
     _ => return None,
   };
 
