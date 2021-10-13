@@ -44,7 +44,15 @@ impl Detour {
       None
     };
 
-    dbg!(&relay.as_ref().map(|code| code.as_ptr() as *const ()));
+    let trampoline_code = memory::allocate_pic(&mut pool, trampoline.emitter(), target)?;
+
+    log::debug!(
+      "relay at {:?}",
+      &relay.as_ref().map(|code| code.as_ptr() as *const ())
+    );
+    log::debug!("detour at {:?}", &detour);
+    log::debug!("trampoline at {:?}", trampoline_code.as_ptr() as *const ());
+    log::debug!("original at {:?}", &target);
 
     // If a relay is supplied, use it instead of the detour address
     let detour = relay
@@ -52,15 +60,13 @@ impl Detour {
       .map(|code| code.as_ptr() as *const ())
       .unwrap_or(detour);
 
-    dbg!(&detour);
-
     Ok(Detour {
       patcher: UnsafeCell::new(arch::Patcher::new(
         target,
         detour,
         trampoline.prolog_size(),
       )?),
-      trampoline: memory::allocate_pic(&mut pool, trampoline.emitter(), target)?,
+      trampoline: trampoline_code,
       enabled: AtomicBool::default(),
       relay,
     })

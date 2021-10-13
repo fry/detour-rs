@@ -68,6 +68,7 @@ impl Builder {
 
     let mut emitter = pic::CodeEmitter::new();
 
+    log::debug!("original moved instructions:");
     let mut bytes_disassembled = 0;
     while !self.finished {
       let instruction = instructions
@@ -76,7 +77,7 @@ impl Builder {
         .ok_or(Error::InvalidCode)?;
       bytes_disassembled += 4;
 
-      dbg!(&instruction);
+      log::debug!("{}", instruction);
 
       let thunk = self.copy_instruction(&instruction)?;
       emitter.add_thunk(thunk);
