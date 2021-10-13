@@ -6,6 +6,7 @@ use std::mem;
 /// The furthest distance between a target and its detour (2 GiB).
 pub const DETOUR_RANGE: usize = 0x8000_0000;
 pub const PAGE_SIZE: usize = 0x1000;
+pub const ALIGNMENT: usize = 8;
 pub const CONDITIONAL_OPS: &'static [bad64::Op] = &[
   Op::B_AL,
   Op::B_CS,

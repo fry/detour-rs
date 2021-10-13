@@ -4,6 +4,7 @@ use std::mem;
 
 /// The furthest distance between a target and its detour (2 GiB).
 pub const DETOUR_RANGE: usize = 0x8000_0000;
+pub const ALIGNMENT: usize = 8;
 
 /// Returns the preferred prolog size for the target.
 pub fn prolog_margin(_target: *const ()) -> usize {

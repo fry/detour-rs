@@ -34,12 +34,15 @@ pub fn gen_jmp_immediate(target: usize) -> Box<dyn pic::Thunkable> {
 // Generate a branch to an address loaded from a memory location located
 // relative to the instruction address. Takes 4 + 4 + 4 = 12 instructions
 pub fn gen_jmp_indirect(detour_value: usize) -> Box<dyn pic::Thunkable> {
+  // Ensure address is aligned - dynasm will gladly truncate the page_off without
+  // warning
+  assert!(detour_value % 8 == 0);
   Box::new(FixedThunk::<typenum::U12>::new(move |pc| {
     let page = (detour_value & !0xfff) as isize - (pc & !0xfff) as isize;
-    let page_off = (detour_value & 0xfff);
+    let page_off = (detour_value & 0xfff) as u32;
     GenericArray::clone_from_slice(&thunk_dynasm!(
       ; adrp x17, page
-      ; ldr x17, [x17, page_off as u32 ]
+      ; ldr x17, [x17, page_off]
       ; br x17
     ))
   }))

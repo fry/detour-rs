@@ -16,9 +16,15 @@ pub fn allocate_pic(
   emitter: &pic::CodeEmitter,
   origin: *const (),
 ) -> Result<alloc::ExecutableMemory> {
+  // Ensure alignment
+  let size = if emitter.len() % arch::meta::ALIGNMENT != 0 {
+    (emitter.len() / arch::meta::ALIGNMENT + 1) * arch::meta::ALIGNMENT
+  } else {
+    emitter.len()
+  };
   // Allocate memory close to the origin
-  log::debug!("allocating {} bytes close to {:?}", emitter.len(), origin);
-  let mut memory = pool.allocate(origin, emitter.len())?;
+  log::debug!("allocating {} bytes close to {:?}", size, origin);
+  let mut memory = pool.allocate(origin, size)?;
   memory.modify(|data| {
     // Generate code for the obtained address
     let code = emitter.emit(data.as_ptr() as *const _);
