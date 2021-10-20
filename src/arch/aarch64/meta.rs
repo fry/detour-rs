@@ -1,13 +1,12 @@
 use super::thunk;
 use crate::{error::Result, pic};
-use bad64::{Imm, Instruction, Op, Operand, Reg};
-use std::mem;
+use bad64::{Imm, Op, Operand, Reg};
 
 /// The furthest distance between a target and its detour (2 GiB).
 pub const DETOUR_RANGE: usize = 0x8000_0000;
 pub const PAGE_SIZE: usize = 0x1000;
 pub const ALIGNMENT: usize = 8;
-pub const CONDITIONAL_OPS: &'static [bad64::Op] = &[
+pub const CONDITIONAL_OPS: &[bad64::Op] = &[
   Op::B_AL,
   Op::B_CS,
   Op::B_EQ,
@@ -33,7 +32,7 @@ pub fn prolog_margin(_target: *const ()) -> usize {
 
 /// Creates a relay containing the detour address to be loaded by the three
 /// instruction indirect jump
-pub fn relay_builder(target: *const (), detour: *const ()) -> Result<Option<pic::CodeEmitter>> {
+pub fn relay_builder(_target: *const (), detour: *const ()) -> Result<Option<pic::CodeEmitter>> {
   let mut emitter = pic::CodeEmitter::new();
   emitter.add_thunk(Box::new(thunk::thunk_dynasm!(
     ; .qword detour as _

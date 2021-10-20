@@ -34,14 +34,7 @@ mod tests {
   fn detour_adr() {
     #[naked]
     unsafe extern "C" fn branch_ret() -> usize {
-      asm!(
-        "adr x0, label",
-        "nop",
-        "nop",
-        "ret",
-        "label:",
-        options(noreturn)
-      )
+      asm!("adr x0, 2f", "nop", "nop", "ret", "2:", options(noreturn))
     }
 
     let label_addr = branch_ret as usize + 16;
@@ -53,11 +46,11 @@ mod tests {
     #[naked]
     unsafe extern "C" fn branch_ret() -> usize {
       asm!(
-        "adrp x0, .Llabel",
+        "adrp x0, 2f@page",
         "nop",
         "nop",
         "ret",
-        ".Llabel:",
+        "2:",
         options(noreturn)
       )
     }

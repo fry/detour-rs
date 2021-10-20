@@ -1,11 +1,7 @@
 use super::{meta, thunk};
 use crate::error::{Error, Result};
 use crate::pic;
-use bad64::{Imm, Instruction, Op, Operand, Reg};
-use dynasmrt::{dynasm, DynasmApi, DynasmLabelApi};
-use generic_array::{typenum, ArrayLength, GenericArray};
-use std::mem;
-use std::ops::{Deref, DerefMut};
+use bad64::{Instruction, Op, Operand};
 
 /// A trampoline generator (x86/x64).
 pub struct Trampoline {
@@ -37,7 +33,7 @@ struct Builder {
   // /// Target destination for a potential internal branch.
   // branch_address: Option<usize>,
   /// Total amount of bytes disassembled.
-  total_bytes_disassembled: usize,
+  // total_bytes_disassembled: usize,
   /// The preferred minimum amount of bytes disassembled.
   margin: usize,
   /// Whether disassembling has finished or not.
@@ -52,7 +48,7 @@ impl Builder {
     Builder {
       // disassembler: Disassembler::new(target),
       // branch_address: None,
-      total_bytes_disassembled: 0,
+      // total_bytes_disassembled: 0,
       finished: false,
       target,
       margin,
@@ -68,7 +64,7 @@ impl Builder {
 
     let mut emitter = pic::CodeEmitter::new();
 
-    log::debug!("original moved instructions:");
+    // log::debug!("original moved instructions:");
     let mut bytes_disassembled = 0;
     while !self.finished {
       let instruction = instructions
@@ -77,7 +73,7 @@ impl Builder {
         .ok_or(Error::InvalidCode)?;
       bytes_disassembled += 4;
 
-      log::debug!("{}", instruction);
+      // log::debug!("{}", instruction);
 
       let thunk = self.copy_instruction(&instruction)?;
       emitter.add_thunk(thunk);
@@ -129,14 +125,3 @@ impl Builder {
     matches!(instruction.op(), Op::RET | Op::B | Op::BR)
   }
 }
-
-// struct Displacement {
-//   page_delta: isize,
-//   addr_delta: isize
-// }
-// fn get_displacement(dest: usize, target: usize) -> Displacement {
-//   Displacement {
-//     page_delta:
-//     addr_delta: target as isize - dest as isize
-//   }
-// }

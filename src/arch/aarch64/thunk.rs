@@ -1,10 +1,9 @@
 use super::meta;
-use crate::error::{Error, Result};
+use crate::error::Result;
 use crate::pic::{self, FixedThunk};
 use bad64::{Imm, Instruction, Op, Operand, Reg};
-use dynasmrt::{dynasm, DynasmApi, DynasmLabelApi};
+use dynasmrt::{dynasm, DynasmLabelApi};
 use generic_array::{typenum, GenericArray};
-use std::ops::Deref;
 
 macro_rules! thunk_dynasm {
     ($($t:tt)*) => {{

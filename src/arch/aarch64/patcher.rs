@@ -1,8 +1,8 @@
 use super::meta;
 use super::thunk;
-use crate::error::{Error, Result};
-use crate::{pic, util};
-use std::{mem, slice};
+use crate::error::Result;
+use crate::pic;
+use std::slice;
 
 pub struct Patcher {
   patch_area: &'static mut [u8],
@@ -52,8 +52,8 @@ impl Patcher {
 
     meta::clear_instruction_cache(self.patch_area);
 
-    let mut instructions: Vec<_> =
-      bad64::disasm(self.patch_area, self.patch_area.as_ptr() as u64).collect();
-    dbg!(&instructions);
+    // let  instructions: Vec<_> =
+    //   bad64::disasm(self.patch_area, self.patch_area.as_ptr() as
+    // u64).collect(); dbg!(&instructions);
   }
 }
